@@ -1,4 +1,4 @@
-package com.slyest.the.cryptobam;
+package com.slyest.the.cryptobam.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
