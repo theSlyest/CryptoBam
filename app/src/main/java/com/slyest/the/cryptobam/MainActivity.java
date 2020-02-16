@@ -1,58 +1,28 @@
 package com.slyest.the.cryptobam;
 
-import androidx.annotation.Nullable;
-//import androidx.appcompat.app.AppCompatActivity;
-//import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
-import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
-import android.location.Location;
 import android.os.AsyncTask;
-//import android.os.Build;
 import android.os.Bundle;
-import android.os.Looper;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
-
 import com.android.volley.AuthFailureError;
-//import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-//import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
-//import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.bumptech.glide.Glide;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.slyest.the.cryptobam.entities.CryptoCoinEntity;
-import com.slyest.the.cryptobam.tracking.Tracker;
-
-//import org.json.JSONArray;
+import com.slyest.the.cryptobam.recview.CoinModel;
+import com.slyest.the.cryptobam.recview.Divider;
+import com.slyest.the.cryptobam.recview.MyCryptoAdapter;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -64,14 +34,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MainActivity extends TrackingActivity {
+public class MainActivity extends LocationActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private RecyclerView recView;
     private MyCryptoAdapter mAdapter;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    private Tracker mTracker;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,10 +47,6 @@ public class MainActivity extends TrackingActivity {
         setContentView(R.layout.activity_main);
         bindViews();
         fetchData();
-
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        checkLocationPermission();
-
 
     }
 
@@ -124,105 +88,10 @@ public class MainActivity extends TrackingActivity {
         fab.setOnClickListener(view -> recView.smoothScrollToPosition(0));
     }
 
-    public class Divider extends RecyclerView.ItemDecoration {
-        private Drawable mDivider;
-
-        public Divider(Context context) {
-            mDivider = context.getResources().getDrawable(R.drawable.list_divider);
-        }
-
-        @Override
-        public void onDrawOver(Canvas c, RecyclerView parent, RecyclerView.State state) {
-            int left = parent.getPaddingLeft();
-            int right = parent.getWidth() - parent.getPaddingRight();
-
-            int childCount = parent.getChildCount();
-            for (int i = 0; i < childCount; i++) {
-                View child = parent.getChildAt(i);
-
-                RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child.getLayoutParams();
-
-                int top = child.getBottom() + params.bottomMargin;
-                int bottom = top + mDivider.getIntrinsicHeight();
-
-                mDivider.setBounds(left, top, right, bottom);
-                mDivider.draw(c);
-            }
-        }
-    }
-
-    private static class MyCryptoAdapter extends RecyclerView.Adapter<MyCryptoAdapter.CoinViewHolder> {
-
-        List<CoinModel> mItems = new ArrayList<>();
-        public final String STR_TEMPLATE_NAME = "%s\t\t\t\t\t\t%s";
-        public final String STR_TEMPLATE_PRICE = "%s$\t\t24H Volume: %s$";
-
-
-        @Override
-        public void onBindViewHolder(CoinViewHolder holder, int position) {
-            final CoinModel model = mItems.get(position);
-            holder.tvNameAndSymbol.setText(String.format(STR_TEMPLATE_NAME, model.name, model.symbol));
-            holder.tvPriceAndVolume.setText(String.format(STR_TEMPLATE_PRICE, model.priceUsd, model.volume24H));
-            Glide.with(holder.itemView).load(model.imageUrl).into(holder.ivIcon);
-        }
-
-        @Override
-        public CoinViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-
-            return new CoinViewHolder(LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.list_item, parent, false));
-        }
-
-        @Override
-        public int getItemCount() {
-            return mItems.size();
-        }
-
-        public void setItems(List<CoinModel> items) {
-            this.mItems.clear();
-            this.mItems.addAll(items);
-            notifyDataSetChanged();
-        }
-
-
-        class CoinViewHolder extends RecyclerView.ViewHolder {
-
-            TextView tvNameAndSymbol;
-            TextView tvPriceAndVolume;
-            ImageView ivIcon;
-
-            public CoinViewHolder(View itemView) {
-                super(itemView);
-                tvNameAndSymbol = itemView.findViewById(R.id.tvNameAndSymbol);
-                tvPriceAndVolume = itemView.findViewById(R.id.tvPriceAndVolume);
-                ivIcon = itemView.findViewById(R.id.ivIcon);
-            }
-        }
-    }
-
 
     private void showErrorToast(String error) {
         Toast.makeText(this, "Error:" + error, Toast.LENGTH_LONG).show();
     }
-
-
-    private class CoinModel {
-        public final String name;
-        public final String symbol;
-        public final String imageUrl;
-        public final String priceUsd;
-        public final String volume24H;
-
-        public CoinModel(String name, String symbol, String imageUrl, String priceUsd, String volume24H) {
-            this.name = name;
-            this.symbol = symbol;
-            this.imageUrl = imageUrl;
-            this.priceUsd = priceUsd;
-            this.volume24H = volume24H;
-        }
-    }
-
-
 
 
     ////////////////////////////////////////////////////////////////////////////////////NETWORK RELATED CODE///////////////////////////////////////////////////////////////////////////////////////
@@ -248,7 +117,6 @@ public class MainActivity extends TrackingActivity {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-
 
                 },
                 error -> {
@@ -278,8 +146,6 @@ public class MainActivity extends TrackingActivity {
     }
 
 
-
-
     public ArrayList<CryptoCoinEntity> parseJSON(String jsonStr) {
         ArrayList<CryptoCoinEntity> data = null;
 
@@ -292,7 +158,6 @@ public class MainActivity extends TrackingActivity {
         }
         return data;
     }
-
 
 
     private class EntityToModelMapperTask extends AsyncTask<List<CryptoCoinEntity>, Void, List<CoinModel>> {
@@ -312,107 +177,6 @@ public class MainActivity extends TrackingActivity {
         protected void onPostExecute(List<CoinModel> data) {
             mAdapter.setItems(data);
             mSwipeRefreshLayout.setRefreshing(false);
-        }
-    }
-    ///////////////////////////////////////////////////////////////////////////////////////////TRACKING CODE/////////////////////////////////////////////////////////////////////////////////////
-
-
-
-    ////////////////////////////////////////////////////////////////////////////////////LOCATION RELATED CODE/////////////////////////////////////////////////////////////////////////////////////
-    private final static int PERMISSION_REQUEST_LOCATION = 1234;
-
-    private FusedLocationProviderClient mFusedLocationClient;
-    private GoogleApiClient mGoogleApiClient;
-    private LocationRequest mLocationRequest;
-
-    private void checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_FINE_LOCATION)) {
-                Toast.makeText(this, "Please give me location permissions", Toast.LENGTH_SHORT).show();
-            } else {
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        PERMISSION_REQUEST_LOCATION);
-            }
-        }
-    }
-
-    protected synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                    @Override
-                    public void onConnected(@Nullable Bundle bundle) {
-                        Log.d(TAG, "onConnected() called with: bundle = [" + bundle + "]");
-                        mLocationRequest = new LocationRequest();
-                        mLocationRequest.setInterval(10000); // two minute interval
-                        mLocationRequest.setFastestInterval(10000);
-                        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-                        if (ContextCompat.checkSelfPermission(MainActivity.this,
-                                Manifest.permission.ACCESS_FINE_LOCATION)
-                                == PackageManager.PERMISSION_GRANTED) {
-                            mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallbacks, Looper.myLooper());
-                        }
-                    }
-
-                    @Override
-                    public void onConnectionSuspended(int i) {
-                        Log.d(TAG, "onConnectionSuspended() called with: i = [" + i + "]");
-                    }
-                })
-                .addOnConnectionFailedListener(connectionResult -> Log.d(TAG, "onConnectionFailed() called with: connectionResult = [" + connectionResult + "]"))
-                .addApi(LocationServices.API)
-                .build();
-        mGoogleApiClient.connect();
-    }
-
-    private LocationCallback mLocationCallbacks = new LocationCallback() {
-        @Override
-        public void onLocationResult(LocationResult locationResult) {
-            Log.d(TAG, "onLocationResult() called with: locationResult = [" + locationResult + "]");
-            for (Location location : locationResult.getLocations()) {
-                if (location != null) {
-                    int lat = (int) (location.getLatitude());
-                    int lng = (int) (location.getLongitude());
-                    mTracker.trackLocation(lat, lng);
-                }
-            }
-        }
-    };
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_LOCATION: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    if (ContextCompat.checkSelfPermission(this,
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-
-                        if (mGoogleApiClient == null) {
-                            buildGoogleApiClient();
-                        }
-                    }
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                            PERMISSION_REQUEST_LOCATION);
-                }
-                return;
-            }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
         }
     }
 
